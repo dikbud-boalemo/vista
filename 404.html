@@ -7,52 +7,66 @@
 </head>
 
 <body>
-
 <script>
 (function () {
 
   const BASE_PATH = "/vista";
 
-  const currentPath = window.location.pathname;
-  const currentSearch = window.location.search || "";
-  const currentHash = window.location.hash || "";
-
-  let route = currentPath;
+  const url = new URL(window.location.href);
 
   /*
-   * Hapus /vista dari path
+   * Jika URL sudah merupakan hasil fallback sebelumnya,
+   * JANGAN redirect lagi.
    */
-  if (route.indexOf(BASE_PATH) === 0) {
-    route = route.substring(BASE_PATH.length);
+  if (url.searchParams.has("p")) {
+    return;
   }
 
-  if (!route || route === "") {
-    route = "/";
+  let path = url.pathname;
+
+  /*
+   * Hapus /vista dari path.
+   */
+  if (path.indexOf(BASE_PATH) === 0) {
+    path = path.substring(BASE_PATH.length);
   }
 
-  if (!route.startsWith("/")) {
-    route = "/" + route;
+  if (!path || path === "") {
+    path = "/";
+  }
+
+  if (!path.startsWith("/")) {
+    path = "/" + path;
   }
 
   /*
-   * Simpan route asli ke parameter p.
+   * Parameter query selain p tetap dipertahankan.
    *
    * Contoh:
-   * /vista/pegawai
+   * /vista/tamu?qr=QR-LOBBY-01
+   *
    * menjadi:
-   * /vista/?p=%2Fpegawai
+   * /vista/?p=%2Ftamu&qr=QR-LOBBY-01
    */
+  const params = new URLSearchParams();
+
+  params.set("p", path);
+
+  url.searchParams.forEach(function (value, key) {
+    if (key !== "p") {
+      params.append(key, value);
+    }
+  });
+
   const target =
     BASE_PATH +
-    "/?p=" +
-    encodeURIComponent(route) +
-    currentSearch +
-    currentHash;
+    "/?" +
+    params.toString() +
+    url.hash;
 
   window.location.replace(target);
 
 })();
 </script>
-
 </body>
 </html>
