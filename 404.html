@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VISTA DIKBUD BOALEMO</title>
+</head>
+
+<body>
+
+<script>
+(function () {
+
+  const BASE_PATH = "/vista";
+
+  const currentPath = window.location.pathname;
+  const currentSearch = window.location.search || "";
+  const currentHash = window.location.hash || "";
+
+  let route = currentPath;
+
+  /*
+   * Hapus /vista dari path
+   */
+  if (route.indexOf(BASE_PATH) === 0) {
+    route = route.substring(BASE_PATH.length);
+  }
+
+  if (!route || route === "") {
+    route = "/";
+  }
+
+  if (!route.startsWith("/")) {
+    route = "/" + route;
+  }
+
+  /*
+   * Simpan route asli ke parameter p.
+   *
+   * Contoh:
+   * /vista/pegawai
+   * menjadi:
+   * /vista/?p=%2Fpegawai
+   */
+  const target =
+    BASE_PATH +
+    "/?p=" +
+    encodeURIComponent(route) +
+    currentSearch +
+    currentHash;
+
+  window.location.replace(target);
+
+})();
+</script>
+
+</body>
+</html>
