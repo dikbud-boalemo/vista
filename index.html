@@ -85,7 +85,7 @@
 
     .loading-box {
       text-align: center;
-      color: white;
+      color: #fff;
       padding: 32px;
     }
 
@@ -131,6 +131,7 @@
 
   <div id="loading">
     <div class="loading-box">
+
       <img
         class="loading-logo"
         src="https://i.ibb.co.com/vvJgRV7S/Lambang-Kabupaten-Boalemo.jpg"
@@ -146,22 +147,25 @@
       <div class="loading-subtitle">
         Visitor Integrated Service & Administration
       </div>
+
     </div>
   </div>
 
-  <!--
-    GOOGLE APPS SCRIPT WEB APP
-    Tetap gunakan URL Web App VISTA yang sebenarnya.
-  -->
   <iframe
     id="vista-frame"
     title="VISTA DIKBUD BOALEMO"
-    allow="camera; microphone; geolocation; clipboard-write"
+    allow="
+      camera;
+      microphone;
+      geolocation;
+      clipboard-write;
+      storage-access
+    "
     referrerpolicy="strict-origin-when-cross-origin"
   ></iframe>
 
   <script>
-    (function () {
+    (() => {
 
       /* =========================================================
          CONFIG
@@ -172,27 +176,20 @@
       const VISTA_EXEC_URL =
         "https://script.google.com/macros/s/AKfycby-7soEAaGZGgU_-pr4RMp9GTN0JgIUUF4KRYl_-0FySihJa1m4R4lIKRtlKpcIOq3cNQ/exec";
 
-      const GITHUB_ORIGIN =
-        "https://dikbud-boalemo.github.io";
+      const ALLOWED_EMBED_ORIGINS = [
+        "https://script.google.com",
+        "https://script.googleusercontent.com"
+      ];
 
-      /*
-       * Origin yang diharapkan dari iframe Apps Script.
-       * Untuk web app Apps Script umumnya berasal dari script.google.com.
-       */
-      const APPS_SCRIPT_ORIGIN =
-        "https://script.google.com";
+      const iframe =
+        document.getElementById("vista-frame");
 
-
-      /* =========================================================
-         ELEMENT
-      ========================================================= */
-
-      const iframe = document.getElementById("vista-frame");
-      const loading = document.getElementById("loading");
+      const loading =
+        document.getElementById("loading");
 
 
       /* =========================================================
-         ROUTE TITLE
+         ROUTE TITLES
       ========================================================= */
 
       const ROUTE_TITLES = {
@@ -211,7 +208,7 @@
 
 
       /* =========================================================
-         NORMALIZE ROUTE
+         ROUTE NORMALIZER
       ========================================================= */
 
       function normalizeRoute(route) {
@@ -220,31 +217,27 @@
           return "/";
         }
 
-        route = String(route).trim();
-
-        /*
-         * Kalau route datang dengan query string,
-         * pisahkan hanya bagian pathname.
-         */
-        route = route.split("?")[0];
+        route = String(route)
+          .trim()
+          .split("?")[0];
 
         if (!route.startsWith("/")) {
           route = "/" + route;
         }
 
-        /*
-         * Hilangkan trailing slash kecuali root.
-         */
-        if (route.length > 1 && route.endsWith("/")) {
+        if (
+          route.length > 1 &&
+          route.endsWith("/")
+        ) {
           route = route.slice(0, -1);
         }
 
-        /*
-         * Hanya izinkan route yang dikenal.
-         */
-        const allowedRoutes = Object.keys(ROUTE_TITLES);
-
-        if (!allowedRoutes.includes(route)) {
+        if (
+          !Object.prototype.hasOwnProperty.call(
+            ROUTE_TITLES,
+            route
+          )
+        ) {
           return "/";
         }
 
@@ -253,70 +246,7 @@
 
 
       /* =========================================================
-         URL STATE
-      ========================================================= */
-
-      function getInitialState() {
-
-        const currentUrl =
-          new URL(window.location.href);
-
-        let path =
-          currentUrl.pathname;
-
-        let searchParams =
-          new URLSearchParams(currentUrl.search);
-
-        /*
-         * Jika datang melalui 404.html,
-         * route sementara disimpan di parameter ?p=
-         */
-        const spaRoute =
-          searchParams.get("p");
-
-        if (spaRoute !== null) {
-
-          let routeFrom404 =
-            decodeURIComponent(spaRoute);
-
-          /*
-           * Hapus parameter p.
-           */
-          searchParams.delete("p");
-
-          /*
-           * Normalisasi route.
-           */
-          path = routeFrom404;
-        }
-
-        /*
-         * Hilangkan BASE_PATH dari pathname.
-         */
-        if (path.startsWith(BASE_PATH)) {
-          path = path.substring(BASE_PATH.length);
-        }
-
-        if (!path || path === "") {
-          path = "/";
-        }
-
-        if (!path.startsWith("/")) {
-          path = "/" + path;
-        }
-
-        path =
-          normalizeRoute(path);
-
-        return {
-          route: path,
-          search: searchParams
-        };
-      }
-
-
-      /* =========================================================
-         GET CURRENT CLEAN ROUTE
+         CURRENT ROUTE
       ========================================================= */
 
       function getCurrentRoute() {
@@ -324,12 +254,14 @@
         let path =
           window.location.pathname;
 
-        if (path.startsWith(BASE_PATH)) {
+        if (
+          path.indexOf(BASE_PATH) === 0
+        ) {
           path =
             path.substring(BASE_PATH.length);
         }
 
-        if (!path || path === "") {
+        if (!path) {
           path = "/";
         }
 
@@ -342,7 +274,7 @@
 
 
       /* =========================================================
-         GET CURRENT QUERY STRING
+         CURRENT QUERY
       ========================================================= */
 
       function getCurrentSearch() {
@@ -351,10 +283,10 @@
 
 
       /* =========================================================
-         BUILD URL
+         BUILD CLEAN URL
       ========================================================= */
 
-      function buildRouteUrl(route, search) {
+      function buildUrl(route, search = "") {
 
         route =
           normalizeRoute(route);
@@ -362,23 +294,14 @@
         let url =
           BASE_PATH;
 
-        if (route !== "/") {
-          url += route;
-        } else {
+        if (route === "/") {
           url += "/";
+        } else {
+          url += route;
         }
 
         if (search) {
-          if (typeof search === "string") {
-            url += search;
-          } else {
-            const query =
-              search.toString();
-
-            if (query) {
-              url += "?" + query;
-            }
-          }
+          url += search;
         }
 
         return url;
@@ -386,22 +309,22 @@
 
 
       /* =========================================================
-         SET DOCUMENT TITLE
+         TITLE
       ========================================================= */
 
-      function updateDocumentTitle(route) {
+      function updateTitle(route) {
 
         route =
           normalizeRoute(route);
 
         document.title =
           ROUTE_TITLES[route] ||
-          "VISTA DIKBUD BOALEMO";
+          ROUTE_TITLES["/"];
       }
 
 
       /* =========================================================
-         SEND ROUTE TO APPS SCRIPT IFRAME
+         SEND MESSAGE TO APPS SCRIPT
       ========================================================= */
 
       function sendRouteToIframe(route) {
@@ -413,95 +336,92 @@
           return;
         }
 
-        route =
-          normalizeRoute(route);
-
         iframe.contentWindow.postMessage(
           {
             type: "VISTA_SET_ROUTE",
-            route: route,
+            route: normalizeRoute(route),
             search: getCurrentSearch()
           },
-          APPS_SCRIPT_ORIGIN
+          "*"
         );
       }
 
 
       /* =========================================================
-         OPEN INITIAL URL
+         INITIAL ROUTE
       ========================================================= */
 
-      const initialState =
-        getInitialState();
+      function resolveInitialRoute() {
 
-      /*
-       * Kalau datang dari 404.html dan ada ?p=...
-       * bersihkan URL menjadi clean URL.
-       *
-       * Contoh:
-       * /vista/?p=%2Fpegawai
-       *
-       * menjadi:
-       * /vista/pegawai
-       */
-      const initialCleanUrl =
-        buildRouteUrl(
-          initialState.route,
-          initialState.search
-        );
+        const url =
+          new URL(window.location.href);
 
-      if (
-        window.location.pathname +
-        window.location.search !==
-        initialCleanUrl
-      ) {
+        const params =
+          new URLSearchParams(url.search);
 
-        window.history.replaceState(
-          {
-            route: initialState.route
-          },
-          "",
-          initialCleanUrl
-        );
+        const p =
+          params.get("p");
+
+        if (p !== null) {
+
+          let route =
+            decodeURIComponent(p);
+
+          params.delete("p");
+
+          if (!route.startsWith("/")) {
+            route = "/" + route;
+          }
+
+          route =
+            normalizeRoute(route);
+
+          const query =
+            params.toString();
+
+          const cleanUrl =
+            buildUrl(
+              route,
+              query ? "?" + query : ""
+            );
+
+          window.history.replaceState(
+            {
+              route: route
+            },
+            "",
+            cleanUrl
+          );
+
+          return route;
+        }
+
+        return getCurrentRoute();
       }
 
-      updateDocumentTitle(
-        initialState.route
-      );
+
+      const initialRoute =
+        resolveInitialRoute();
+
+      updateTitle(initialRoute);
 
 
       /* =========================================================
-         SET IFRAME SRC
+         APPS SCRIPT SRC
+         HANYA QUERY PARAMETER DIKIRIM KE /exec
       ========================================================= */
 
-      /*
-       * HANYA query parameter yang diteruskan ke Apps Script.
-       *
-       * Contoh:
-       * /vista/?qr=QR-LOBBY-01
-       *
-       * menjadi:
-       * Apps Script /exec?qr=QR-LOBBY-01
-       *
-       * Route /pegawai tidak dikirim sebagai query.
-       * Route dikirim menggunakan postMessage.
-       */
-      const appsScriptUrl =
-        VISTA_EXEC_URL +
-        initialState.search.toString()
-          ? "?" + initialState.search.toString()
-          : "";
+      const search =
+        getCurrentSearch();
 
       iframe.src =
-        initialState.search.toString()
-          ? VISTA_EXEC_URL +
-            "?" +
-            initialState.search.toString()
+        search
+          ? VISTA_EXEC_URL + search
           : VISTA_EXEC_URL;
 
 
       /* =========================================================
-         RECEIVE MESSAGE FROM APPS SCRIPT
+         RECEIVE MESSAGE
       ========================================================= */
 
       window.addEventListener(
@@ -509,12 +429,25 @@
         function (event) {
 
           /*
-           * Security:
-           * hanya terima pesan dari Apps Script.
+           * Pastikan pesan benar-benar berasal
+           * dari iframe VISTA milik kita.
            */
           if (
-            event.origin !==
-            APPS_SCRIPT_ORIGIN
+            event.source !==
+            iframe.contentWindow
+          ) {
+            return;
+          }
+
+          /*
+           * Apps Script dapat menggunakan
+           * script.google.com atau
+           * script.googleusercontent.com.
+           */
+          if (
+            !ALLOWED_EMBED_ORIGINS.includes(
+              event.origin
+            )
           ) {
             return;
           }
@@ -526,6 +459,23 @@
             !data ||
             typeof data !== "object"
           ) {
+            return;
+          }
+
+
+          /* -----------------------------------------------------
+             VISTA READY
+          ----------------------------------------------------- */
+
+          if (
+            data.type ===
+            "VISTA_READY"
+          ) {
+
+            sendRouteToIframe(
+              getCurrentRoute()
+            );
+
             return;
           }
 
@@ -553,7 +503,7 @@
             ) {
 
               const targetUrl =
-                buildRouteUrl(
+                buildUrl(
                   route,
                   getCurrentSearch()
                 );
@@ -567,26 +517,7 @@
               );
             }
 
-            updateDocumentTitle(
-              route
-            );
-
-            return;
-          }
-
-
-          /* -----------------------------------------------------
-             VISTA READY
-          ----------------------------------------------------- */
-
-          if (
-            data.type ===
-            "VISTA_READY"
-          ) {
-
-            sendRouteToIframe(
-              getCurrentRoute()
-            );
+            updateTitle(route);
 
             return;
           }
@@ -597,7 +528,7 @@
 
 
       /* =========================================================
-         BROWSER BACK / FORWARD
+         BACK / FORWARD
       ========================================================= */
 
       window.addEventListener(
@@ -607,13 +538,9 @@
           const route =
             getCurrentRoute();
 
-          updateDocumentTitle(
-            route
-          );
+          updateTitle(route);
 
-          sendRouteToIframe(
-            route
-          );
+          sendRouteToIframe(route);
 
         },
         false
@@ -628,24 +555,15 @@
         "load",
         function () {
 
-          /*
-           * Kirim route setelah Apps Script
-           * selesai dimuat.
-           */
           sendRouteToIframe(
             getCurrentRoute()
           );
 
-          /*
-           * Hilangkan loading overlay.
-           */
           setTimeout(
             function () {
-              loading.classList.add(
-                "hide"
-              );
+              loading.classList.add("hide");
             },
-            150
+            200
           );
 
         },
@@ -654,16 +572,14 @@
 
 
       /* =========================================================
-         SAFETY FALLBACK
+         FALLBACK LOADING
       ========================================================= */
 
       setTimeout(
         function () {
-          loading.classList.add(
-            "hide"
-          );
+          loading.classList.add("hide");
         },
-        8000
+        10000
       );
 
     })();
